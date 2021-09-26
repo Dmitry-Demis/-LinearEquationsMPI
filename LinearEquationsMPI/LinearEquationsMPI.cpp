@@ -14,7 +14,7 @@ int msgtag = 26;
 MPI_Status status;
 #define comm MPI_COMM_WORLD
 int rankp, sizep;
-const int N = 5;
+const int N = 11;
 double eps = 1e-4;
 
 template <typename T>
@@ -105,7 +105,7 @@ void GetRowsFromMatrix(T** newArr, T** commonArr, int countOfRows, int distance)
 	}
 }
 
-#define P(x) cout << #x << " = " << x << endl;
+#define P(x)  #x << " = " << x
 
 int main(int argc, char** argv)
 {
@@ -207,14 +207,12 @@ int main(int argc, char** argv)
 	}
 	int countOfRows = l1;
 	int distance = 0;
-	if (rankp)
-	{
-
+	//int* displacements = new int[sizep] {0};
 		for (int i = 0; i < rankp; i++)
 		{
+			//displacements[i+1] = distance;
 			distance += kol[i]; // каждый процесс возьмёт только свои строчки
 		}
-	}
 	double** processArray = new double* [N];
 	for (int i = 0; i < countOfRows; i++)
 	{
@@ -253,29 +251,32 @@ int main(int argc, char** argv)
 					}					
 					matrixXX[i + distance] = 1.0 / processArray[i][i + distance] * (mB[i + distance] - sum1);
 					
+					cout << P(i) << " " << P(rankp) << " " << P(xMax) << endl;
 					if (fabs(matrixXX[i] - matrixX[i]) > xMax)
 					{
 						xMax = fabs(matrixXX[i] - matrixX[i]);
 					}
-				}
-				ConvertVectorToArray(matrixXX, mX);
-				PrintArray(mX, N, "RESULT" + to_string(rankp) + fileNameA);
-				bool z = true;
-				for (const auto& i : matrixXX)
-				{
-					if (z)
-					{
-						cout << "" + to_string(rankp) + " process" << endl;
-					}
-					z = false;
-					cout << setw(10) << i << " ";
-				}
+					
+				}				
+				ConvertVectorToArray(matrixXX, mX);				
+				MPI_Barrier(comm);
+				// Нахождение глобального отклонения
+				double globalDeviation = 0.0;			
+				MPI_Allreduce(&xMax, &globalDeviation, 1, MPI_DOUBLE, MPI_MAX, comm);	
+				// Всё выше работает
+
+
+
+				double* result = new double[N] {0};
+				const int countOfElements = countOfRows;
+
+				// disp[size] = {...}
+				// Allgather
+				
 			}
 
-			//MPI_Barrier(comm);
-
 			matrixX = matrixXX;
-		//} while (xMax > eps);
+		//} while (globalDeviation > eps);
 
 
     MPI_Finalize();

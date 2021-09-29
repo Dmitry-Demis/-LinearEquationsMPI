@@ -271,7 +271,7 @@ int main(int argc, char** argv)
 				const int countOfElements = countOfRows;
 
 				// disp[size] = {...}
-				// Allgather
+				// Allgatherv
 				
 			}
 

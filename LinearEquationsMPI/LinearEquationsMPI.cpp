@@ -6,16 +6,16 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "mpi.h"
 #include "MatrixGeneration.h"
+#include "mpi.h"
 
 using namespace std;
 int msgtag = 26;
 MPI_Status status;
 #define comm MPI_COMM_WORLD
 int rankp, sizep;
-const int N = 11;
-double eps = 1e-4;
+const int N = 100;
+double eps = 1e-5;
 
 template <typename T>
 void ConvertVectorToArray(vector<vector<T>> vec, T** arr)
@@ -127,10 +127,10 @@ int main(int argc, char** argv)
 #pragma endregion
 
 	#pragma region Считывание матриц из файла в векторы и конвертация в массивы
-	if (!MatrixGeneration()) // Matrix Generation
-	{
-		cout << "Files were created" << endl;
-	}
+	//if (!MatrixGeneration()) // Matrix Generation
+	//{
+	//	cout << "Files were created" << endl;
+	//}
 
 	string
 		fileNameA = "matrixA" + to_string(N) + ".txt", //a file name of matrices
@@ -206,6 +206,20 @@ int main(int argc, char** argv)
 		for (int i = 0; i < l2; i++) kol[i]++;
 	}
 	int countOfRows = l1;
+	int* displacement = new int[sizep] {0};
+	for (int i = 1; i < sizep; i++)
+	{
+		displacement[i] = displacement[i - 1] + kol[i - 1];
+	}
+	/*for (int i = 0; i < sizep; i++)
+	{
+		cout << displacement[i] << " ";
+	}
+	for (int i = 0; i < sizep; i++)
+	{
+		cout << "kol-" << i << " " << kol[i] << " ";
+	}
+	cout << endl;*/
 	int distance = 0;
 	//int* displacements = new int[sizep] {0};
 		for (int i = 0; i < rankp; i++)
@@ -222,7 +236,7 @@ int main(int argc, char** argv)
 #pragma endregion
 
 
-	PrintArray(processArray, countOfRows, "output" + to_string(rankp) + fileNameA);
+	//PrintArray(processArray, countOfRows, "output" + to_string(rankp) + fileNameA);
 																
 	#pragma region Расчёты
 
@@ -230,54 +244,101 @@ int main(int argc, char** argv)
 
 	
 
-	vector<double> matrixX(N, -1.0), matrixXX(N, -1.0);
+	vector<double> matrixX(N, 0.0), matrixXX(N, 0.0);
 	double* mX = new double[N];
-	//	do{
+	
+	double* mXX = new double[N] {0};
+	for (int i = 0; i < N; i++)
+	{
+		mX[i] = 1;
+		mXX[i] = 1;
+	}
+	double globalDeviation = 0.0;
+	int k = 0;
+	do {
 			xMax = -1;
-			int dist = distance;
-			
-			//if (rankp)
 			{
-				for (int i = 0; i < countOfRows; i++)
-				{
-
+				for (int i = 0; i < countOfRows; i++){
 					sum1 = 0;
 					for (int j = 0; j < N; j++)
 					{
 						if (i + distance != j)
 						{
-							sum1 += processArray[i][j] * matrixX[j];
+							//sum1 += processArray[i][j] * matrixX[j];
+							sum1 += processArray[i][j] * mX[j];
 						}
-					}					
-					matrixXX[i + distance] = 1.0 / processArray[i][i + distance] * (mB[i + distance] - sum1);
-					
-					cout << P(i) << " " << P(rankp) << " " << P(xMax) << endl;
-					if (fabs(matrixXX[i] - matrixX[i]) > xMax)
-					{
-						xMax = fabs(matrixXX[i] - matrixX[i]);
 					}
+					//matrixXX[i + distance] = 1.0 / processArray[i][i + distance] * (mB[i + distance] - sum1);
+					mXX[i + distance] = 1.0 / processArray[i][i + distance] * (b[i + distance] - sum1);					
+					//cout << P(i) << " " << P(rankp) << " " << P(xMax) << endl;
 					
-				}				
-				ConvertVectorToArray(matrixXX, mX);				
+					if (fabs(mXX[i + distance] - mX[i + distance]) > xMax)
+					{
+						xMax = fabs(mXX[i + distance] - mX[i + distance]);
+					}
+				}
+				//ConvertVectorToArray(matrixXX, mXX);
+				
 				MPI_Barrier(comm);
 				// Нахождение глобального отклонения
-				double globalDeviation = 0.0;			
-				MPI_Allreduce(&xMax, &globalDeviation, 1, MPI_DOUBLE, MPI_MAX, comm);	
-				// Всё выше работает
 
+				MPI_Allreduce(&xMax, &globalDeviation, 1, MPI_DOUBLE, MPI_MAX, comm);
+				double* mXXX = new double[countOfRows];
+				for (int i = 0; i < countOfRows; i++)
+				{
+					mXXX[i] = mXX[i + distance];
+				}
+				MPI_Allgatherv(&mXXX[0], kol[rankp], MPI_DOUBLE, mX, kol, displacement, MPI_DOUBLE, comm);
+				/*cout <<rankp<<";"<< P(countOfRows) << endl;
+				if (rankp)
+				{
+					
+					cout << "kol =";	
+					for (int i = 0; i < sizep; i++)
+					{
+						cout << kol[i] << " ";
+					}
+					cout << endl;
+					cout << "displacement =";
+					for (int i = 0; i < sizep; i++)
+					{
+						cout << displacement[i] << " ";
+					}
+					cout << endl;
+					for (int i = 0; i < N; i++)
+					{
+						cout << mX[i] << " ";
+					}
+				}
+				
+				cout << endl;*/
+				/*for (int i = 0; i < N; i++)
+				{
+					mXX[i] = mX[i];
+				}*/
+				//matrixXX = matrixX;
+				MPI_Barrier(comm);
+				//MPI_Allgatherv(mXX, l1, MPI_DOUBLE, mX, kol, displacement, MPI_DOUBLE, comm);
 
-
-				double* result = new double[N] {0};
-				const int countOfElements = countOfRows;
+				// Всё выше работает				
+				//cout << "Message" << endl;
 
 				// disp[size] = {...}
 				// Allgatherv
-				
+
 			}
+			k++;
+} while (globalDeviation > eps); //while (k < 0 );
 
-			matrixX = matrixXX;
-		//} while (globalDeviation > eps);
-
+	if (!rankp)
+	{
+		cout << rankp << " process" << endl;
+		for (int i = 0; i < N; i++)
+		{
+			cout << setw(3) << i + 1 << "." << setw(10) << fixed << setprecision(5) << mX[i] << endl;
+		}
+	}
+	
 
     MPI_Finalize();
     return MPI_SUCCESS;

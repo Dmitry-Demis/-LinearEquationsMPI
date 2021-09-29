@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{c2e335a6-debe-40df-971c-90bd4577a32d}</ProjectGuid>
+    <ProjectGuid>{400adb81-cacf-4bdd-aedf-dc63c290ebe8}</ProjectGuid>
     <RootNamespace>LinearEquationsMPI</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -89,8 +89,6 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(MSMPI_INC);$(MSMPI_INC)\x86</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -146,6 +144,9 @@
   <ItemGroup>
     <ClCompile Include="LinearEquationsMPI.cpp" />
     <ClCompile Include="MatrixGeneration.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MatrixGeneration.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

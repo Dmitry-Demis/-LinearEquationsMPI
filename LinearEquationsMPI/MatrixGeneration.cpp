@@ -4,7 +4,7 @@ bool MatrixGeneration()
 {
 	srand((unsigned)time(NULL));
 	string fileNameA, fileNameB;
-	vector<int> matrixSize = {11/*, 100, 200, 500 */};
+	vector<int> matrixSize = {100, 200, 500};
 	for (const auto& N : matrixSize)
 	{
 		fileNameA = "matrixA" + to_string(N) + ".txt";
